@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { User } from "../entity/User";
+import { User } from "../entities/User";
 import { userRepo } from "../repositories/user.repo";
 import { generateToken } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";

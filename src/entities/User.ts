@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from "typeorm";
 import { IsEmail, MinLength } from "class-validator";
 import { Expose } from "class-transformer";
+import { Cart } from "./Cart";
 
 @Entity("user")
 export class User {
@@ -22,4 +23,7 @@ export class User {
   @MinLength(8, { message: "Password must be at least 8 characters long" })
   @Expose()
   password: string;
+
+  @OneToOne(() => Cart, (cart) => cart.user)
+  cart: Cart;
 }

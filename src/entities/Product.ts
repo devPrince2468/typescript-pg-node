@@ -9,7 +9,7 @@ export class Product {
   @Column({ unique: true, nullable: false })
   @MinLength(2, { message: "Product name must be at least 2 characters long" })
   @IsNotEmpty({ message: "Product name is required" })
-  name: string;
+  title: string;
 
   @Column({ nullable: false })
   @IsNotEmpty({ message: "Description is required" })

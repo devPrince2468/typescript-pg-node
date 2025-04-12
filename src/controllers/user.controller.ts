@@ -1,7 +1,7 @@
 import { validate } from "class-validator";
 import { plainToInstance } from "class-transformer";
 import { userService } from "../services/user.service";
-import { User } from "../entity/User";
+import { User } from "../entities/User";
 
 export const userController = {
   register: async (req, res, next) => {

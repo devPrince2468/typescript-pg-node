@@ -2,8 +2,10 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
 import { DataSource } from "typeorm";
-import { User } from "./entity/User";
-import { Product } from "./entity/Product";
+import { User } from "./entities/User";
+import { Product } from "./entities/Product";
+import { Cart } from "./entities/Cart";
+import { CartItem } from "./entities/CartItem";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -14,7 +16,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: true,
-  entities: [User, Product],
+  entities: [User, Product, Cart, CartItem],
   migrations: [],
   subscribers: [],
 });

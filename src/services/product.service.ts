@@ -1,15 +1,15 @@
 import { validate } from "class-validator";
-import { Product } from "../entity/Product";
+import { Product } from "../entities/Product";
 import { productRepo } from "../repositories/product.repo";
 import { AppError } from "../helpers/AppError";
 
 export const productService = {
   addProduct: async (productBody) => {
     try {
-      const { name, description, price, category, image } = productBody;
+      const { title, description, price, category, image } = productBody;
 
       const product = new Product();
-      product.name = name;
+      product.title = title;
       product.description = description;
       product.price = price;
       product.category = category;
@@ -27,7 +27,7 @@ export const productService = {
         );
       }
 
-      const existingProduct = await productRepo.findOneBy({ name });
+      const existingProduct = await productRepo.findOneBy({ title });
       if (existingProduct) {
         throw new AppError("Product already exists!", 400);
       }
@@ -74,9 +74,9 @@ export const productService = {
         throw new AppError("Product not found", 404);
       }
 
-      const { name, description, price, category, image } = productBody;
+      const { title, description, price, category, image } = productBody;
 
-      product.name = name;
+      product.title = title;
       product.description = description;
       product.price = price;
       product.category = category;
