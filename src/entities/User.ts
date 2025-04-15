@@ -1,7 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  OneToMany,
+} from "typeorm";
 import { IsEmail, MinLength } from "class-validator";
 import { Expose } from "class-transformer";
 import { Cart } from "./Cart";
+import { Order } from "./Order";
 
 @Entity("user")
 export class User {
@@ -26,4 +33,7 @@ export class User {
 
   @OneToOne(() => Cart, (cart) => cart.user)
   cart: Cart;
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders: Order[];
 }
