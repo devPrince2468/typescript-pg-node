@@ -6,18 +6,26 @@ import { User } from "../entities/User";
 export const userController = {
   register: async (req, res, next) => {
     try {
-      const user = plainToInstance(User, req.body);
+      const { file, body } = req;
+      if (!file) {
+        return res.status(400).json({ message: "Image is required" });
+      }
+      const user = plainToInstance(User, body);
       const errors = await validate(user);
       if (errors.length > 0) {
         return res.status(400).json(errors);
       }
 
-      const response = await userService.registerUserService(req.body);
+      const response = await userService.registerUserService({
+        ...body,
+        image: file.filename,
+      });
 
       res.status(201).json({
         name: response.savedUser.name,
         email: response.savedUser.email,
         id: response.savedUser.id,
+        image: response.savedUser.image,
       });
     } catch (error) {
       next(error);

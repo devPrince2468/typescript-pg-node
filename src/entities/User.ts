@@ -36,4 +36,7 @@ export class User {
 
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
+
+  @Column({ nullable: true })
+  image: string;
 }

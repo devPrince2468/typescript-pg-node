@@ -11,6 +11,7 @@ export const userService = {
     user.name = userData.name;
     user.email = userData.email;
     user.password = hashedPassword;
+    user.image = userData.image;
 
     try {
       const savedUser = await userRepo.save(user);
