@@ -27,4 +27,9 @@ export class Product {
   @Column()
   @IsNotEmpty({ message: "Image is required" })
   image: string;
+
+  @Column()
+  @IsNotEmpty({ message: "Stock quantity is required" })
+  @IsNumber()
+  quantity: number;
 }

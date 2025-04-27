@@ -11,6 +11,8 @@ import router from "./routes";
 import "reflect-metadata";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
+import path from "path";
+import { uploadSingle } from "./middleware/multer";
 dotenv.config();
 
 const app = express();
@@ -19,10 +21,11 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: "http://localhost:5173/", credentials: true }));
 app.use(morgan("dev"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 app.use(apiLimiter);
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 const { PORT = 8000 } = process.env;
 

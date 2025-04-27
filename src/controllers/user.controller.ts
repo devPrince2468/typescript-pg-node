@@ -37,7 +37,7 @@ export const userController = {
       const response = await userService.loginUserService(credentials);
       res
         .cookie("token", response, {
-          httpOnly: true,
+          // httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           maxAge: 60 * 60 * 1000,
@@ -50,7 +50,7 @@ export const userController = {
   logout: async (req, res) => {
     try {
       res.clearCookie("token", {
-        httpOnly: true,
+        // httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });

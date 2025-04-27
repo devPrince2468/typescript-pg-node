@@ -1,12 +1,13 @@
 import { Router } from "express";
 import productController from "../controllers/product.controller";
+import { uploadSingle } from "../middleware/multer";
 
 const router = Router();
 
 router.get("/", productController.getProducts);
 router.get("/:id", productController.getProduct);
-router.post("/", productController.addProduct);
+router.post("/", uploadSingle, productController.addProduct);
 router.delete("/:id", productController.deleteProduct);
-router.put("/:id", productController.updateProduct);
+router.put("/:id", uploadSingle, productController.updateProduct);
 
 export default router;

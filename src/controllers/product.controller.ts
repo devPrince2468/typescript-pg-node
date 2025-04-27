@@ -1,10 +1,22 @@
+import { plainToInstance } from "class-transformer";
 import { productService } from "../services/product.service";
+import { Product } from "../entities/Product";
+import { validate } from "class-validator";
 
 export const productController = {
   addProduct: async (req, res, next) => {
     try {
-      const productData = req.body;
-      const response = await productService.addProduct(productData);
+      const { file, body } = req;
+      console.log("File:", file);
+      console.log("Body:", body);
+      if (!file) {
+        return res.status(400).json({ message: "Image is required" });
+      }
+
+      const response = await productService.addProduct({
+        ...body,
+        image: file.filename,
+      });
       res.status(201).json({
         message: "Product added successfully",
         data: response,
@@ -39,7 +51,17 @@ export const productController = {
   updateProduct: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const productData = req.body;
+      const productData = { ...req.body, image: req.file?.filename }; // Handling image filename
+
+      // If there's no file in the request, preserve the old image
+      if (!req.file) {
+        const existingProduct = await productService.getProduct(id);
+        productData.image = existingProduct.image; // Preserve old image if no new image uploaded
+      }
+
+      console.log("File:", req.file);
+      console.log("Body:", productData);
+
       const response = await productService.updateProduct(id, productData);
       res.status(200).json({
         message: "Product updated successfully",

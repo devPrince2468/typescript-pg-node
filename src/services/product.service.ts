@@ -6,13 +6,15 @@ import { AppError } from "../helpers/AppError";
 export const productService = {
   addProduct: async (productBody) => {
     try {
-      const { title, description, price, category, image } = productBody;
+      const { title, description, price, category, image, quantity } =
+        productBody;
 
       const product = new Product();
       product.title = title;
       product.description = description;
-      product.price = price;
+      product.price = Number(price);
       product.category = category;
+      product.quantity = Number(quantity);
       product.image = image;
 
       const errors = await validate(product);
@@ -76,15 +78,18 @@ export const productService = {
 
       const { title, description, price, category, image } = productBody;
 
+      // Update product fields with the data from the request
       product.title = title;
       product.description = description;
-      product.price = price;
+      product.price = Number(price);
       product.category = category;
+      product.quantity = Number(productBody.quantity);
+
+      // Update the image if provided in the request body
       product.image = image;
 
       const errors = await validate(product);
       if (errors.length > 0) {
-        // You can include error details if needed
         const validationMessages = errors
           .map((err) => Object.values(err.constraints))
           .flat();
