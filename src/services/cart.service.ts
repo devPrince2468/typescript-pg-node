@@ -46,7 +46,16 @@ export const cartService = {
     await cartItemRepo.save(cartItem);
 
     // 8. Return the updated cart item
-    return { userId, productId, quantity };
+    return {
+      userId,
+      productId,
+      quantity: cartItem.quantity,
+      product: {
+        id: product.id,
+        name: product.title,
+        price: product.price,
+      },
+    };
   },
   getCart: async (userId) => {
     // Logic to get the cart for a user
@@ -56,14 +65,51 @@ export const cartService = {
     });
     if (!user) throw new AppError("User not found", 404);
 
-    return user.cart;
+    if (!user.cart) return { items: [] };
+
+    const cartItems = user.cart.items.map((item) => ({
+      productId: item.product.id,
+      productName: item.product.title,
+      productPrice: item.product.price,
+      quantity: item.quantity,
+    }));
+
+    return cartItems;
   },
   removeProductFromCart: async (userId, productId) => {
     // Logic to remove a product from the cart for a user
-    return [];
+    const user = await userRepo.findOne({
+      where: { id: userId },
+      relations: ["cart", "cart.items"],
+    });
+    if (!user) throw new AppError("User not found", 404);
+
+    const cartItem = await cartItemRepo.findOne({
+      where: { cart: { id: user.cart.id }, product: { id: productId } },
+    });
+    if (!cartItem) throw new AppError("Product not found in cart", 404);
+
+    await cartItemRepo.remove(cartItem);
+
+    return { message: "Product removed from cart" };
   },
   updateProductToCart: async (userId, productId, quantity) => {
+    console.log("Updating product in cart", userId, productId, quantity);
     // Logic to update the quantity of a product in the cart for a user
-    return [];
+    const user = await userRepo.findOne({
+      where: { id: userId },
+      relations: ["cart", "cart.items"],
+    });
+    if (!user) throw new AppError("User not found", 404);
+
+    const cartItem = await cartItemRepo.findOne({
+      where: { cart: { id: user.cart.id }, product: { id: productId } },
+    });
+    if (!cartItem) throw new AppError("Product not found in cart", 404);
+
+    cartItem.quantity = Number(quantity);
+    await cartItemRepo.save(cartItem);
+
+    return cartItem;
   },
 };
