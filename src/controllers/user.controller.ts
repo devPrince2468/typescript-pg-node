@@ -6,10 +6,8 @@ import { User } from "../entities/User";
 export const userController = {
   register: async (req, res, next) => {
     try {
-      const { file, body } = req;
-      if (!file) {
-        return res.status(400).json({ message: "Image is required" });
-      }
+      const { body } = req;
+
       const user = plainToInstance(User, body);
       const errors = await validate(user);
       if (errors.length > 0) {
@@ -18,7 +16,7 @@ export const userController = {
 
       const response = await userService.registerUserService({
         ...body,
-        image: file.filename,
+        image: body.cloudinaryResult.secure_url,
       });
 
       res.status(201).json({

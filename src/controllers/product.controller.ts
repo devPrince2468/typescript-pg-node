@@ -6,16 +6,11 @@ import { validate } from "class-validator";
 export const productController = {
   addProduct: async (req, res, next) => {
     try {
-      const { file, body } = req;
-      console.log("File:", file);
-      console.log("Body:", body);
-      if (!file) {
-        return res.status(400).json({ message: "Image is required" });
-      }
+      const { body } = req;
 
       const response = await productService.addProduct({
         ...body,
-        image: file.filename,
+        image: body.cloudinaryResult.secure_url,
       });
       res.status(201).json({
         message: "Product added successfully",
@@ -51,7 +46,12 @@ export const productController = {
   updateProduct: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const productData = { ...req.body, image: req.file?.filename }; // Handling image filename
+
+      let image = req.body.image
+        ? req.body.image
+        : req.body.cloudinaryResult.secure_url;
+
+      const productData = { ...req.body, image: image };
 
       // If there's no file in the request, preserve the old image
       if (!req.file) {
