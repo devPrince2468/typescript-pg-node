@@ -1,26 +1,30 @@
-# Use Node.js LTS version as the base image
-FROM node:18-alpine
+# Use official Node.js image
+FROM node:18
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies including TypeScript and ts-node for migrations
+# Install dependencies
 RUN npm install
 
-# Copy application source code
+# Copy the rest of your code
 COPY . .
 
-# Run TypeScript build
+# Copy the keys directory to the build path
+COPY src/keys ./build/keys
+
+
+# Build TypeScript
 RUN npm run build
 
-# Run database migrations
-RUN npm run migration
+# Set environment variables
+ENV NODE_ENV=production
 
-# Expose the port your app runs on
-EXPOSE 8000
+# Expose port
+EXPOSE 8080
 
-# Start the application using the built version
-CMD ["npm", "start"]
+# Start app
+CMD ["node", "build/index.js"]
