@@ -72,6 +72,7 @@ export const cartService = {
       productName: item.product.title,
       productPrice: item.product.price,
       quantity: item.quantity,
+      image: item.product.image,
     }));
 
     return cartItems;
@@ -111,5 +112,19 @@ export const cartService = {
     await cartItemRepo.save(cartItem);
 
     return cartItem;
+  },
+  clearCart: async (userId) => {
+    // Logic to clear the cart for a user
+    const user = await userRepo.findOne({
+      where: { id: userId },
+      relations: ["cart", "cart.items"],
+    });
+    if (!user) throw new AppError("User not found", 404);
+
+    if (user.cart) {
+      await cartItemRepo.delete({ cart: { id: user.cart.id } });
+    }
+
+    return { message: "Cart cleared" };
   },
 };

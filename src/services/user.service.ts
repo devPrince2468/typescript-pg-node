@@ -3,6 +3,7 @@ import { User } from "../entities/User";
 import { userRepo } from "../repositories/user.repo";
 import { generateToken } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";
+import { Product } from "../entities/Product";
 
 export const userService = {
   registerUserService: async (userData) => {
@@ -49,10 +50,38 @@ export const userService = {
     return token;
   },
   getUsersService: async () => {
-    const users = await userRepo.find();
+    const users = await userRepo.find({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        orders: {
+          id: true,
+          createdAt: true,
+          status: true,
+          items: {
+            quantity: true,
+            product: {
+              title: true,
+              price: true,
+              image: true,
+            },
+          },
+        },
+      },
+      relations: {
+        orders: {
+          items: {
+            product: true,
+          },
+        },
+      },
+    });
     if (!users) {
       throw new AppError("No users found", 404);
     }
+    console.log("Users found:", users);
     return users;
   },
 };

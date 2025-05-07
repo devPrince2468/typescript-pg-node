@@ -35,6 +35,8 @@ export const orderService = {
     const order = new Order();
     order.user = user;
     order.items = [];
+    order.totalPrice = 0;
+    order.status = "pending";
 
     for (const item of orderData) {
       const product = await productRepo.findOneBy({ id: item.productId });
@@ -44,10 +46,15 @@ export const orderService = {
       const orderItem = new OrderItem();
       orderItem.product = product;
       orderItem.quantity = item.quantity;
-      orderItem.price = product.price;
+      orderItem.price = item.productPrice;
 
       order.items.push(orderItem);
     }
+
+    order.totalPrice = order.items.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
 
     const savedOrder = await orderRepo.save(order);
     return savedOrder;

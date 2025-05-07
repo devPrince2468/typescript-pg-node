@@ -25,4 +25,7 @@ export class Order {
 
   @Column({ default: "pending" })
   status: string;
+
+  @Column({ type: "decimal", precision: 10, scale: 2 })
+  totalPrice: number;
 }

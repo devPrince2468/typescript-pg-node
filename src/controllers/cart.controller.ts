@@ -45,5 +45,13 @@ export const cartController = {
       next(error);
     }
   },
+  clearCart: async (req, res, next) => {
+    try {
+      const cart = await cartService.clearCart(req.user.id);
+      res.status(200).json(cart);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 export default cartController;
