@@ -12,14 +12,16 @@ import "reflect-metadata";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
 import path from "path";
-import { uploadSingle } from "./middleware/multer";
 dotenv.config();
 
 const app = express();
 
 // Middlewares
+app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors({ origin: "http://localhost:5173/", credentials: true }));
+app.use(
+  cors({ origin: "https://everydaycart-app.netlify.app/", credentials: true })
+);
 app.use(morgan("dev"));
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
@@ -44,7 +46,7 @@ app.use(errorHandler);
 AppDataSource.initialize()
   .then(async () => {
     app.listen(PORT, () => {
-      console.log("Server is running on http://localhost:" + PORT);
+      console.log("Server is running on " + PORT);
     });
     console.log("Data Source has been initialized!");
   })
