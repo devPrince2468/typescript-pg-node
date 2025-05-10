@@ -40,7 +40,10 @@ export const userController = {
           maxAge: 60 * 60 * 1000,
           sameSite: "lax",
         })
-        .json({ message: "Logged in successfully" });
+        .json({
+          message: "Logged in successfully",
+          token: response,
+        });
     } catch (error) {
       res.status(500).json({ message: "Error logging in", error });
     }

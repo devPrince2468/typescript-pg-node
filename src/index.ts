@@ -19,8 +19,22 @@ const app = express();
 // Middlewares
 app.set("trust proxy", 1);
 app.use(helmet());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://everydaycart-app.netlify.app",
+];
+
 app.use(
-  cors({ origin: "https://everydaycart-app.netlify.app/", credentials: true })
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
 );
 app.use(morgan("dev"));
 app.use(bodyParser.json({ limit: "10mb" }));
