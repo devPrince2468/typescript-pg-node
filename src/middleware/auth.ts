@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { verifyToken } from "../utils/jwt";
+import { verifyToken, verifyTokenHS256 } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";
 
 export interface AuthenticatedRequest extends Request {
@@ -20,7 +20,8 @@ export const authenticate = (
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token);
+    // const decoded = verifyToken(token);
+    const decoded = verifyTokenHS256(token);
 
     req.user = decoded;
     next();
