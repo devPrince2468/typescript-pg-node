@@ -35,10 +35,10 @@ export const userController = {
       const response = await userService.loginUserService(credentials);
       res
         .cookie("token", response, {
-          // httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          httpOnly: true,
+          secure: false,
           maxAge: 60 * 60 * 1000,
+          sameSite: "lax",
         })
         .json({ message: "Logged in successfully" });
     } catch (error) {
