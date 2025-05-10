@@ -2,6 +2,9 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 // Load EC keys
 const privateKey = fs.readFileSync(
@@ -18,6 +21,7 @@ export interface JwtPayload {
   email: string;
 }
 
+// Original ES256 methods
 export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, privateKey, {
     algorithm: "ES256",
@@ -27,4 +31,17 @@ export const generateToken = (payload: JwtPayload): string => {
 
 export const verifyToken = (token: string): JwtPayload => {
   return jwt.verify(token, publicKey, { algorithms: ["ES256"] }) as JwtPayload;
+};
+
+export const generateTokenHS256 = (payload: JwtPayload): string => {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    algorithm: "HS256",
+    expiresIn: "1h",
+  });
+};
+
+export const verifyTokenHS256 = (token: string): JwtPayload => {
+  return jwt.verify(token, process.env.JWT_SECRET, {
+    algorithms: ["HS256"],
+  }) as JwtPayload;
 };

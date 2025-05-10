@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { User } from "../entities/User";
 import { userRepo } from "../repositories/user.repo";
-import { generateToken } from "../utils/jwt";
+import { generateToken, generateTokenHS256 } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";
 import { Product } from "../entities/Product";
 
@@ -41,7 +41,8 @@ export const userService = {
     const userPayload = { id: user.id, email: user.email };
 
     // Generate JWT
-    const token = generateToken(userPayload);
+    // const token = generateToken(userPayload);
+    const token = generateTokenHS256(userPayload);
 
     if (!token) {
       throw new AppError("Token generation failed", 500);
