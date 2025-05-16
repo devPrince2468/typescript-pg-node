@@ -53,13 +53,13 @@ for (const key of requiredEnv) {
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  host: process.env.DB_HOST,
+  host: process.env.DB_HOST || "localhost",
   port: parseInt(process.env.DB_PORT as string, 10),
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  synchronize: process.env.NODE_ENV !== "production",
-  logging: process.env.TYPEORM_LOGGING === "true",
+  synchronize: process.env.NODE_ENV !== "production" ? true : false,
+  logging: false,
   entities: [User, Product, Cart, CartItem, Order, OrderItem],
   migrations: [],
   subscribers: [],

@@ -43,7 +43,9 @@ export const orderController = {
 
   deleteOrder: async (req, res, next) => {
     try {
-      await orderService.deleteOrder(req.user.id, req.params.id);
+      const userId = req.user.id;
+      const orderId = req.params.id;
+      await orderService.deleteOrder(userId, orderId);
       res.status(204).send();
     } catch (error) {
       next(error);

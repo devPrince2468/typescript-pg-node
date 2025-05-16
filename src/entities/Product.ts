@@ -1,5 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-import { MinLength, IsNotEmpty, IsNumber } from "class-validator";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  BeforeUpdate,
+  BeforeInsert,
+} from "typeorm";
+import {
+  MinLength,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsDefined,
+} from "class-validator";
 
 @Entity("product")
 export class Product {
@@ -17,6 +29,7 @@ export class Product {
 
   @Column("decimal", { nullable: false })
   @IsNumber()
+  @Min(0)
   price: number;
 
   @Column({ nullable: false })
@@ -28,8 +41,26 @@ export class Product {
   @IsNotEmpty({ message: "Image is required" })
   image: string;
 
-  @Column({ default: 1 })
+  @Column({ default: 0 })
   @IsNotEmpty({ message: "Stock quantity is required" })
   @IsNumber()
-  quantity: number;
+  @Min(0)
+  stock: number;
+
+  @Column({ default: 0 })
+  @IsNumber()
+  @Min(0)
+  reserved: number;
+
+  @Column({ default: 0 })
+  @IsDefined()
+  @IsNumber()
+  @Min(0)
+  available: number;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  updateAvailableQuantity() {
+    this.available = Math.max(0, this.stock - this.reserved);
+  }
 }

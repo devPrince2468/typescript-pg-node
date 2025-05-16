@@ -4,7 +4,6 @@
   "description": "Awesome project developed with TypeORM.",
   "type": "commonjs",
   "devDependencies": {
-    "@types/bcrypt": "^5.0.1",
     "@types/bcryptjs": "^3.0.0",
     "@types/body-parser": "^1.19.5",
     "@types/cookie-parser": "^1.4.8",
@@ -24,7 +23,6 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "class-transformer": "^0.5.1",

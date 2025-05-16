@@ -47,6 +47,7 @@ export const cartController = {
   },
   clearCart: async (req, res, next) => {
     try {
+      console.log("Clearing cart for user:", req.user);
       const cart = await cartService.clearCart(req.user.id);
       res.status(200).json(cart);
     } catch (error) {

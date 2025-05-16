@@ -14,6 +14,7 @@ export const authenticate = (
 ) => {
   try {
     const authHeader = req.headers.authorization;
+    console.log("Authorization header:", authHeader);
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Missing or invalid token" });
@@ -22,6 +23,7 @@ export const authenticate = (
     const token = authHeader.split(" ")[1];
     // const decoded = verifyToken(token);
     const decoded = verifyTokenHS256(token);
+    console.log("Decoded token:", decoded);
 
     req.user = decoded;
     next();

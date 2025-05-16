@@ -1,3 +1,5 @@
+import { CartItem } from "../entities/CartItem";
+import { Product } from "../entities/Product";
 import { AppError } from "../helpers/AppError";
 import { cartRepo } from "../repositories/cart.repo";
 import { cartItemRepo } from "../repositories/cartItem.repo";
@@ -8,7 +10,7 @@ export const cartService = {
   addProductToCart: async ({ userId, productId, quantity }) => {
     // 1. Check if the user exists
     const user = await userRepo.findOne({
-      where: { id: userId },
+      where: { id: Number(userId) },
       relations: ["cart", "cart.items"],
     });
     if (!user) throw new AppError("User not found", 404);
@@ -25,16 +27,28 @@ export const cartService = {
     const product = await productRepo.findOneBy({ id: productId });
     if (!product) throw new AppError("Product not found", 404);
 
-    // 4. Check if the product is already in the cart
+    // 4. Check if the product has sufficient stock
+    if (product.stock < quantity) {
+      throw new AppError("Insufficient stock available", 400);
+    }
+
+    // 5. Check if the product is already in the cart
     let cartItem = await cartItemRepo.findOne({
       where: { cart: { id: cart.id }, product: { id: product.id } },
     });
 
-    // 5. If the product is already in the cart, update the quantity
+    // 6. If the product is already in the cart, update the quantity
     if (cartItem) {
-      cartItem.quantity += Number(quantity); // Increment the quantity
+      const newQuantity = cartItem.quantity + Number(quantity);
+      if (product.stock < newQuantity) {
+        throw new AppError(
+          "Insufficient stock available for the updated quantity",
+          400
+        );
+      }
+      cartItem.quantity = newQuantity; // Increment the quantity
     } else {
-      // 6. If the product is not in the cart, create a new cart item
+      // 7. If the product is not in the cart, create a new cart item
       cartItem = cartItemRepo.create({
         cart,
         product,
@@ -42,10 +56,14 @@ export const cartService = {
       });
     }
 
-    // 7. Save the cart item to the database
+    // 8. Deduct the reserved quantity from the product stock
+    product.stock -= quantity;
+    await productRepo.save(product);
+
+    // 9. Save the cart item to the database
     await cartItemRepo.save(cartItem);
 
-    // 8. Return the updated cart item
+    // 10. Return the updated cart item
     return {
       userId,
       productId,
@@ -90,6 +108,13 @@ export const cartService = {
     });
     if (!cartItem) throw new AppError("Product not found in cart", 404);
 
+    // Restore the product stock
+    const product = await productRepo.findOneBy({ id: productId });
+    if (product) {
+      product.stock += cartItem.quantity;
+      await productRepo.save(product);
+    }
+
     await cartItemRepo.remove(cartItem);
 
     return { message: "Product removed from cart" };
@@ -108,23 +133,87 @@ export const cartService = {
     });
     if (!cartItem) throw new AppError("Product not found in cart", 404);
 
+    const product = await productRepo.findOneBy({ id: productId });
+    if (!product) throw new AppError("Product not found", 404);
+
+    const quantityDifference = quantity - cartItem.quantity;
+
+    if (quantityDifference > 0 && product.stock < quantityDifference) {
+      throw new AppError(
+        "Insufficient stock available for the updated quantity",
+        400
+      );
+    }
+
+    // Update product stock
+    product.stock -= quantityDifference;
+    await productRepo.save(product);
+
     cartItem.quantity = Number(quantity);
     await cartItemRepo.save(cartItem);
 
     return cartItem;
   },
   clearCart: async (userId) => {
-    // Logic to clear the cart for a user
+    // Fetch user with cart and items
     const user = await userRepo.findOne({
       where: { id: userId },
-      relations: ["cart", "cart.items"],
+      relations: ["cart", "cart.items", "cart.items.product"],
     });
-    if (!user) throw new AppError("User not found", 404);
 
-    if (user.cart) {
-      await cartItemRepo.delete({ cart: { id: user.cart.id } });
+    if (!user) {
+      console.error(`User not found for ID: ${userId}`);
+      throw new AppError("User not found", 404);
     }
 
-    return { message: "Cart cleared" };
+    if (!user.cart || !user.cart.items || user.cart.items.length === 0) {
+      console.log(`Cart is empty or not found for user: ${user.id}`);
+      return { message: "Cart is already empty" };
+    }
+
+    // Use a transaction to ensure atomicity
+    try {
+      await userRepo.manager.transaction(async (transactionalEntityManager) => {
+        const productRepoTx = transactionalEntityManager.getRepository(Product);
+        const cartItemRepoTx =
+          transactionalEntityManager.getRepository(CartItem);
+
+        // Update product stock
+        for (const item of user.cart.items) {
+          console.log(
+            `Processing cart item: Product ID ${item.product.id}, Quantity ${item.quantity}`
+          );
+          const product = await productRepoTx.findOne({
+            where: { id: item.product.id },
+          });
+
+          if (!product) {
+            console.error(`Product not found: ${item.product.id}`);
+            throw new AppError(`Product not found: ${item.product.id}`, 404);
+          }
+
+          product.stock += item.quantity;
+          await productRepoTx.save(product);
+          console.log(
+            `Updated product stock: Product ID ${product.id}, New Stock ${product.stock}`
+          );
+        }
+
+        // Delete cart items
+        const deleteResult = await cartItemRepoTx.delete({
+          cart: { id: user.cart.id },
+        });
+        console.log(
+          `Cart items deleted: Affected rows ${deleteResult.affected}`
+        );
+      });
+
+      return { message: "Cart cleared successfully" };
+    } catch (error) {
+      console.error(`Error clearing cart for user ${userId}:`, error);
+      throw error instanceof AppError
+        ? error
+        : new AppError("Failed to clear cart", 500);
+    }
   },
 };

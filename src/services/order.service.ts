@@ -65,6 +65,15 @@ export const orderService = {
   },
   deleteOrder: async (userId, orderId) => {
     // Logic to delete an existing order for a user
-    return {};
+    const user = await userRepo.findOneBy({ id: userId });
+    if (!user) throw new AppError("User not found", 404);
+    const order = await orderRepo.findOne({
+      where: { id: orderId, user: { id: userId } },
+      relations: ["items", "items.product"],
+    });
+    console.log("Deleting order", order);
+    if (!order) throw new AppError("Order not found", 404);
+    await orderRepo.remove(order);
+    return { message: "Order deleted successfully" };
   },
 };
