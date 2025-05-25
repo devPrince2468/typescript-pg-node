@@ -19,6 +19,7 @@ const publicKey = fs.readFileSync(
 export interface JwtPayload {
   id: number;
   email: string;
+  role?: string;
 }
 
 // Original ES256 methods
@@ -34,7 +35,9 @@ export const verifyToken = (token: string): JwtPayload => {
 };
 
 export const generateTokenHS256 = (payload: JwtPayload): string => {
-  return jwt.sign(payload, process.env.JWT_SECRET, {
+  // Ensure role is included in the token payload
+  const tokenPayload = { ...payload, role: payload.role || "USER" }; // Default to 'USER' if role is not provided
+  return jwt.sign(tokenPayload, process.env.JWT_SECRET, {
     algorithm: "HS256",
     expiresIn: "1h",
   });
