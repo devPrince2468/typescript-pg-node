@@ -8,7 +8,7 @@ export enum AppRoles {
 const ac = new AccessControl();
 
 ac.grant(AppRoles.USER)
-  .readOwn("product")
+  .readAny("product")
   .readAny("category")
   .createOwn("order")
   .readOwn("order");
@@ -23,6 +23,7 @@ ac.grant(AppRoles.ADMIN)
   .deleteAny("category")
   .readAny("order")
   .updateAny("order")
-  .deleteAny("order");
+  .deleteAny("order")
+  .readAny("user");
 
 export default ac;

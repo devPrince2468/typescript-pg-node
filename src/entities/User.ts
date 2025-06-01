@@ -5,10 +5,11 @@ import {
   OneToOne,
   OneToMany,
 } from "typeorm";
-import { IsEmail, MinLength } from "class-validator";
+import { IsEmail, MinLength, IsEnum } from "class-validator";
 import { Expose } from "class-transformer";
 import { Cart } from "./Cart";
 import { Order } from "./Order";
+import { AppRoles } from "../access-control";
 
 @Entity("user")
 export class User {
@@ -39,4 +40,13 @@ export class User {
 
   @Column({ nullable: true })
   image: string;
+
+  @Column({
+    type: "enum",
+    enum: AppRoles,
+    default: AppRoles.USER,
+  })
+  @IsEnum(AppRoles, { message: "Invalid role" })
+  @Expose()
+  role: AppRoles;
 }

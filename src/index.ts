@@ -12,15 +12,37 @@ import "reflect-metadata";
 import { errorHandler } from "./middleware/errorHandler";
 import { apiLimiter } from "./middleware/rateLimiter";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger";
+
 dotenv.config();
 
+// Critical: Check for JWT_SECRET
+if (!process.env.JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET is not defined in .env file.");
+  process.exit(1);
+}
+
 const app = express();
+
+// Swagger UI setup
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Add a route to serve the Swagger/OpenAPI specification as JSON
+app.get("/api-docs.json", (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
 
 // Middlewares
 app.set("trust proxy", 1);
 app.use(helmet());
+
+const { PORT = 8000 } = process.env;
+
 const allowedOrigins = [
   "http://localhost:5173",
+  `http://localhost:${PORT}`,
   "https://everydaycart-app.netlify.app",
 ];
 
@@ -43,12 +65,10 @@ app.use(cookieParser());
 app.use(apiLimiter);
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
-const { PORT = 8000 } = process.env;
-
 app.use("/api/v1", router);
 
 app.get("/", (req: Request, res: Response) => {
-  res.status(200).json({ message: "Welcome to E-commerce API" });
+  res.redirect("/api-docs");
 });
 
 app.get("*", (req: Request, res: Response) => {

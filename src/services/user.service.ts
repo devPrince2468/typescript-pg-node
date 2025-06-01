@@ -4,6 +4,7 @@ import { userRepo } from "../repositories/user.repo";
 import { generateToken, generateTokenHS256 } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";
 import { Product } from "../entities/Product";
+import { AppRoles } from "../access-control";
 
 export const userService = {
   registerUserService: async (userData) => {
@@ -13,6 +14,7 @@ export const userService = {
     user.email = userData.email;
     user.password = hashedPassword;
     user.image = userData.image;
+    user.role = userData.role || AppRoles.USER;
 
     try {
       const savedUser = await userRepo.save(user);
@@ -38,7 +40,7 @@ export const userService = {
       throw new AppError("Invalid password", 401);
     }
 
-    const userPayload = { id: user.id, email: user.email };
+    const userPayload = { id: user.id, email: user.email, role: user.role };
 
     // Generate JWT
     // const token = generateToken(userPayload);

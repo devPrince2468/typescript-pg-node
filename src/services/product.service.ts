@@ -2,6 +2,30 @@ import { validate } from "class-validator";
 import { Product } from "../entities/Product";
 import { productRepo } from "../repositories/product.repo";
 import { AppError } from "../helpers/AppError";
+import { AppDataSource } from "../data-source";
+
+// Assuming your Product entity is in ../entities/Product
+// And AppDataSource is your TypeORM data source
+const productRepository = AppDataSource.getRepository(Product);
+
+interface CreateProductData {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  image: string;
+  stock: number; // Admin provides the initial total stock
+}
+
+interface UpdateProductData {
+  title?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  image?: string;
+  stock?: number; // Admin can update total stock
+  // Note: 'reserved' and 'available' are not directly updated via this general endpoint
+}
 
 export const productService = {
   addProduct: async (productBody) => {
@@ -180,5 +204,165 @@ export const productService = {
       console.error("Unexpected error:", error);
       throw new AppError("Error updating product stock", 500);
     }
+  },
+
+  createProductService: async (data: CreateProductData): Promise<Product> => {
+    const existingProduct = await productRepository.findOneBy({
+      title: data.title,
+    });
+    if (existingProduct) {
+      throw new AppError("Product with this title already exists", 409);
+    }
+
+    const product = productRepository.create({
+      ...data,
+      reserved: 0, // New products have no reservations by default
+    });
+    // The @BeforeInsert hook in Product.ts will calculate 'available' (stock - reserved)
+    return await productRepository.save(product);
+  },
+
+  updateProductService: async (
+    productId: number,
+    data: UpdateProductData
+  ): Promise<Product> => {
+    const product = await productRepository.findOneBy({ id: productId });
+
+    if (!product) {
+      throw new AppError("Product not found", 404);
+    }
+
+    // Preserve existing reserved quantity, only update fields provided in data
+    const currentReserved = product.reserved;
+
+    // Update stock if provided by admin
+    let newStock = product.stock;
+    if (data.stock !== undefined) {
+      if (data.stock < 0) {
+        throw new AppError("Stock cannot be negative", 400);
+      }
+      // Business rule: If an admin reduces stock below current reservations, it's an issue.
+      // For this general update, we'll allow it, and `available` will become 0 or negative (if not for Math.max in hook).
+      // A more advanced system might block this or trigger alerts/processes.
+      // The hook `available = Math.max(0, this.stock - this.reserved)` will prevent negative available.
+      newStock = data.stock;
+    }
+
+    // Merge other updatable fields
+    productRepository.merge(product, {
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      category: data.category,
+      image: data.image,
+      stock: newStock, // Apply the new stock value
+      // DO NOT directly assign data.reserved here.
+    });
+
+    // Ensure reserved is not accidentally overwritten if not part of merge logic directly
+    product.reserved = currentReserved;
+
+    // The @BeforeUpdate hook in Product.ts will recalculate 'available' based on the new stock and existing reserved quantity.
+    return await productRepository.save(product);
+  },
+
+  getAllProductsService: async (): Promise<Product[]> => {
+    const products = await productRepository.find();
+    if (!products) {
+      throw new AppError("No products found", 404);
+    }
+    return products;
+  },
+
+  getProductByIdService: async (productId: number): Promise<Product | null> => {
+    const product = await productRepository.findOneBy({ id: productId });
+    if (!product) {
+      throw new AppError("Product not found", 404);
+    }
+    return product;
+  },
+
+  deleteProductService: async (productId: number): Promise<void> => {
+    const product = await productRepository.findOneBy({ id: productId });
+    if (!product) {
+      throw new AppError("Product not found to delete", 404);
+    }
+    // Consider if there are related entities or business rules before deleting (e.g., existing orders with this product)
+    await productRepository.remove(product);
+  },
+
+  // --- Stock/Reservation methods (to be called by Cart/Order services) ---
+
+  /**
+   * Reserves a certain quantity of a product.
+   * To be called when items are added to cart (if cart reservation is enabled)
+   * or when an order is initiated (pending payment).
+   */
+  reserveStockService: async (
+    productId: number,
+    quantityToReserve: number
+  ): Promise<Product> => {
+    const product = await productRepository.findOneBy({ id: productId });
+    if (!product) throw new AppError("Product not found for reservation", 404);
+
+    if (product.available < quantityToReserve) {
+      throw new AppError("Not enough available stock to reserve", 400);
+    }
+
+    product.reserved += quantityToReserve;
+    // @BeforeUpdate hook will update product.available
+    return await productRepository.save(product);
+  },
+
+  /**
+   * Releases a certain quantity of reserved product stock.
+   * To be called when items are removed from cart (if cart reservation was enabled),
+   * or if a pending order is cancelled/fails.
+   */
+  releaseStockService: async (
+    productId: number,
+    quantityToRelease: number
+  ): Promise<Product> => {
+    const product = await productRepository.findOneBy({ id: productId });
+    if (!product)
+      throw new AppError("Product not found for stock release", 404);
+
+    product.reserved = Math.max(0, product.reserved - quantityToRelease);
+    // @BeforeUpdate hook will update product.available
+    return await productRepository.save(product);
+  },
+
+  /**
+   * Finalizes a sale by deducting stock.
+   * To be called when an order is successfully paid and confirmed.
+   */
+  deductStockService: async (
+    productId: number,
+    quantitySold: number
+  ): Promise<Product> => {
+    const product = await productRepository.findOneBy({ id: productId });
+    if (!product)
+      throw new AppError("Product not found for stock deduction", 404);
+
+    // This check should ideally happen *before* payment attempt, but good to have defense here.
+    if (product.available < quantitySold) {
+      // This means reservations might not have worked correctly or stock changed.
+      throw new AppError(
+        "Critical error: Not enough available stock to fulfill order after confirmation.",
+        500
+      );
+    }
+    if (product.stock < quantitySold) {
+      throw new AppError(
+        "Critical error: Not enough total stock to fulfill order.",
+        500
+      );
+    }
+
+    product.stock -= quantitySold;
+    // If items were reserved for this sale, the reservation is now fulfilled.
+    product.reserved = Math.max(0, product.reserved - quantitySold);
+    // @BeforeUpdate hook will update product.available
+    return await productRepository.save(product);
   },
 };
