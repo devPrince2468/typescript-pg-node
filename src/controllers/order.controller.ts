@@ -21,8 +21,12 @@ export const orderController = {
 
   createOrder: async (req, res, next) => {
     try {
-      const order = await orderService.createOrder(req.user.id, req.body);
-      res.status(201).json({ message: "Order created successfully", order });
+      const order = await orderService.createOrderFromCart(req.user.id);
+      res.status(201).json({
+        message: "Order created successfully",
+        orderId: order.id,
+        orderItems: order.items,
+      });
     } catch (error) {
       next(error);
     }

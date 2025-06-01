@@ -35,7 +35,7 @@ export const cartController = {
   },
   updateProductToCart: async (req, res, next) => {
     try {
-      const cart = await cartService.updateProductToCart(
+      const cart = await cartService.updateProductInCart(
         req.user.id,
         req.params.id,
         req.body.quantity
