@@ -11,7 +11,8 @@ ac.grant(AppRoles.USER)
   .readAny("product")
   .readAny("category")
   .createOwn("order")
-  .readOwn("order");
+  .readOwn("order")
+  .updateOwn("order");
 
 ac.grant(AppRoles.ADMIN)
   .extend(AppRoles.USER)

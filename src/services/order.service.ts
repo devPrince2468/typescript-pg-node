@@ -2,20 +2,11 @@ import { Order } from "../entities/Order";
 import { OrderItem } from "../entities/OrderItem";
 import { AppError } from "../helpers/AppError";
 import { orderRepo } from "../repositories/order.repo";
-import { productRepo } from "../repositories/product.repo";
 import { userRepo } from "../repositories/user.repo";
-import { productService } from "./product.service";
 import { AppDataSource } from "../data-source";
-import { Cart } from "../entities/Cart";
 import { User } from "../entities/User";
 import { Product } from "../entities/Product";
 import { CartItem } from "../entities/CartItem";
-
-interface OrderItemData {
-  productId: number;
-  quantity: number;
-  price: number;
-}
 
 export const orderService = {
   getOrders: async (userId) => {
@@ -24,7 +15,7 @@ export const orderService = {
 
     const orders = await orderRepo.find({
       where: { user: { id: userId } },
-      relations: ["items", "items.product", "user"],
+      relations: ["items", "items.product"],
       order: { createdAt: "DESC" },
     });
     return orders;
@@ -35,13 +26,13 @@ export const orderService = {
 
     const order = await orderRepo.findOne({
       where: { id: orderId, user: { id: userId } },
-      relations: ["items", "items.product", "user"],
+      relations: ["items", "items.product"],
     });
     if (!order) throw new AppError("Order not found", 404);
 
     return order;
   },
-  createOrderFromCart: async (userId: number): Promise<Order> => {
+  createOrder: async (userId: number): Promise<Order> => {
     return AppDataSource.transaction(async (transactionalEntityManager) => {
       const user = await transactionalEntityManager.findOne(User, {
         where: { id: userId },
@@ -76,15 +67,13 @@ export const orderService = {
 
         // Update product stock
         product.stock -= cartItem.quantity;
-        // The Product entity's @BeforeUpdate hook will recalculate `available`.
-        // We save the product change immediately within the transaction.
+
         await transactionalEntityManager.save(Product, product);
 
         const orderItem = transactionalEntityManager.create(OrderItem, {
-          // `order` will be set later once the Order entity instance is created
           product: product,
           quantity: cartItem.quantity,
-          price: product.price, // Use current product price at time of order
+          price: product.price,
         });
         newOrderItems.push(orderItem);
         calculatedTotalPrice += orderItem.price * orderItem.quantity;
@@ -93,7 +82,7 @@ export const orderService = {
       // 2. Create and save the Order with its items
       const order = transactionalEntityManager.create(Order, {
         user: user,
-        items: newOrderItems, // Assign the fully prepared OrderItem instances
+        items: newOrderItems,
         totalPrice: calculatedTotalPrice,
         status: "PENDING",
       });
@@ -116,15 +105,24 @@ export const orderService = {
       if (cartItemsToRemove.length > 0) {
         await transactionalEntityManager.remove(cartItemsToRemove);
       }
-      // Optionally remove the cart itself or disassociate from user if it's single-use.
-      // user.cart = null; await transactionalEntityManager.save(User, user);
 
       return savedOrder;
     });
   },
   updateOrder: async (userId, orderId, orderData) => {
-    // Logic to update an existing order for a user
-    return {};
+    const { status } = orderData;
+    if (!status) throw new AppError("Status is required", 400);
+    const user = await userRepo.findOneBy({ id: userId });
+    if (!user) throw new AppError("User not found", 404);
+    const order = await orderRepo.findOne({
+      where: { id: orderId, user: { id: userId } },
+      relations: ["items", "items.product"],
+    });
+
+    if (!order) throw new AppError("Order not found", 404);
+    if (status) order.status = status;
+
+    return await orderRepo.save(order);
   },
   deleteOrder: async (userId, orderId) => {
     const user = await userRepo.findOneBy({ id: userId });
@@ -137,15 +135,5 @@ export const orderService = {
     if (!order) throw new AppError("Order not found", 404);
     await orderRepo.remove(order);
     return { message: "Order deleted successfully" };
-  },
-  updateOrderStatus: async (
-    orderId: number,
-    status: string
-  ): Promise<Order> => {
-    const order = await orderRepo.findOneBy({ id: orderId });
-    if (!order) throw new AppError("Order not found", 404);
-
-    order.status = status;
-    return await orderRepo.save(order);
   },
 };

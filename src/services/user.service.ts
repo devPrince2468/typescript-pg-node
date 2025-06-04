@@ -1,9 +1,8 @@
 import bcrypt from "bcryptjs";
 import { User } from "../entities/User";
 import { userRepo } from "../repositories/user.repo";
-import { generateToken, generateTokenHS256 } from "../utils/jwt";
+import { generateTokenHS256 } from "../utils/jwt";
 import { AppError } from "../helpers/AppError";
-import { Product } from "../entities/Product";
 import { AppRoles } from "../access-control";
 
 export const userService = {

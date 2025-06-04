@@ -2,23 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { productService } from "../services/product.service";
 import { AuthenticatedRequest } from "../middleware/auth"; // Assuming you have this for user info
 import { AppError } from "../helpers/AppError";
-import { plainToInstance } from "class-transformer";
-import { validate } from "class-validator";
-import { Product } from "../entities/Product"; // For validation if needed directly
-
-// Helper for validation if you want to keep it in controller
-// Alternatively, validation can be a separate middleware or in the service layer
-const validateAndThrow = async (dto: any) => {
-  const errors = await validate(dto);
-  if (errors.length > 0) {
-    // Format errors if needed, or throw a generic validation error
-    const messages = errors
-      .map((err) => Object.values(err.constraints || {}))
-      .flat()
-      .join(", ");
-    throw new AppError(`Validation failed: ${messages}`, 400);
-  }
-};
 
 export default {
   addProduct: async (
@@ -42,10 +25,6 @@ export default {
         stock: parseInt(stock, 10),
         image,
       };
-
-      // Optional: Validate DTO if you create a DTO class with class-validator decorators
-      // const productDto = plainToInstance(CreateProductInputDto, createProductDto);
-      // await validateAndThrow(productDto);
 
       const product = await productService.createProductService(
         createProductDto
@@ -77,10 +56,6 @@ export default {
       if (category) updateData.category = category;
       if (stock !== undefined) updateData.stock = parseInt(stock, 10);
       if (image) updateData.image = image; // Only update image if a new one was uploaded
-
-      // Optional: Validate DTO for update
-      // const productUpdateDto = plainToInstance(UpdateProductInputDto, updateData);
-      // await validateAndThrow(productUpdateDto);
 
       if (Object.keys(updateData).length === 0) {
         throw new AppError("No update data provided", 400);
