@@ -71,6 +71,10 @@ app.get("/", (req: Request, res: Response) => {
   res.redirect("/api-docs");
 });
 
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({ message: "Server is healthy" });
+});
+
 app.get("*", (req: Request, res: Response) => {
   res.status(505).json({ message: "Bad Request" });
 });
