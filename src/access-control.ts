@@ -12,19 +12,19 @@ ac.grant(AppRoles.USER)
   .readAny("category")
   .createOwn("order")
   .readOwn("order")
-  .updateOwn("order");
+  .updateOwn("order")
+  .deleteOwn("order");
 
 ac.grant(AppRoles.ADMIN)
-  .extend(AppRoles.USER)
+  .readAny("product")
   .createAny("product")
   .updateAny("product")
   .deleteAny("product")
+  .readAny("category")
   .createAny("category")
   .updateAny("category")
   .deleteAny("category")
   .readAny("order")
-  .updateAny("order")
-  .deleteAny("order")
   .readAny("user");
 
 export default ac;

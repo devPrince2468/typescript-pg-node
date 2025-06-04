@@ -109,18 +109,27 @@ export const orderService = {
       return savedOrder;
     });
   },
-  updateOrder: async (userId, orderId, orderData) => {
+  updateOrder: async (
+    userId: number,
+    orderId: number,
+    orderData: { status: string }
+  ) => {
     const { status } = orderData;
-    if (!status) throw new AppError("Status is required", 400);
+    if (typeof status !== "string" || status.trim() === "") {
+      throw new AppError(
+        "Status is required and must be a non-empty string",
+        400
+      );
+    }
     const user = await userRepo.findOneBy({ id: userId });
     if (!user) throw new AppError("User not found", 404);
+
     const order = await orderRepo.findOne({
       where: { id: orderId, user: { id: userId } },
-      relations: ["items", "items.product"],
     });
 
     if (!order) throw new AppError("Order not found", 404);
-    if (status) order.status = status;
+    order.status = status;
 
     return await orderRepo.save(order);
   },

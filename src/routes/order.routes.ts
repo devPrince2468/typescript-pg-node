@@ -31,7 +31,12 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.get("/", authenticate, orderController.getOrders);
+router.get(
+  "/",
+  authenticate,
+  authorize("readOwn", "order"),
+  orderController.getOrders
+);
 
 /**
  * @swagger
@@ -160,7 +165,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("updateAny", "order"),
+  authorize("updateOwn", "order"),
   orderController.updateOrder
 );
 
